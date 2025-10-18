@@ -89,12 +89,12 @@ export default function ChatInterface() {
               {isLoading && (
                 <div className="py-3">
                   <div className="max-w-3xl mx-auto px-4">
-                    <div className="flex gap-3 items-center justify-end">
-                      <div className="flex items-center">
-                        <span className="text-gray-400 text-sm animate-pulse">Thinking...</span>
-                      </div>
+                    <div className="flex gap-3 items-center justify-start">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-orange-500 text-white font-bold flex-shrink-0">
                         AI
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-gray-400 text-sm animate-pulse">Thinking...</span>
                       </div>
                     </div>
                   </div>

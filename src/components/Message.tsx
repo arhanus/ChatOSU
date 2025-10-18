@@ -87,7 +87,7 @@ export default function Message({ role, content }: MessageProps) {
   return (
     <div className="py-3">
       <div className="max-w-3xl mx-auto px-4">
-        <div className={`flex gap-3 items-start ${isAI ? 'flex-row-reverse' : ''}`}>
+        <div className={`flex gap-3 items-start ${isAI ? '' : 'flex-row-reverse'}`}>
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isAI ? 'bg-orange-500' : 'bg-blue-500'} text-white font-bold flex-shrink-0 mb-1`}>
             {isAI ? 'AI' : 'U'}
           </div>
@@ -95,7 +95,7 @@ export default function Message({ role, content }: MessageProps) {
             <div 
               className={`
                 rounded-2xl px-4 py-2.5 
-                ${isAI ? 'bg-orange-500/10 rounded-tr-sm' : 'bg-blue-500/10 rounded-tl-sm'} 
+                ${isAI ? 'bg-orange-500/10 rounded-tl-sm' : 'bg-blue-500/10 rounded-tr-sm'} 
                 shadow-sm
               `}
             >
