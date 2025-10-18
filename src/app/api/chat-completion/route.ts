@@ -8,6 +8,62 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// In-memory rate limiting store
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+// Rate limiting configuration
+const RATE_LIMIT = {
+  maxRequests: 10,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+};
+
+// Function to get client IP
+function getClientIP(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIP = request.headers.get('x-real-ip');
+  const cfConnectingIP = request.headers.get('cf-connecting-ip');
+  
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  if (realIP) {
+    return realIP;
+  }
+  if (cfConnectingIP) {
+    return cfConnectingIP;
+  }
+  
+  return 'unknown';
+}
+
+// Function to check rate limit
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetTime: number } {
+  const now = Date.now();
+  const userLimit = rateLimitStore.get(ip);
+  
+  // If no record exists or window has expired, create new record
+  if (!userLimit || now > userLimit.resetTime) {
+    const resetTime = now + RATE_LIMIT.windowMs;
+    rateLimitStore.set(ip, { count: 1, resetTime });
+    return { allowed: true, remaining: RATE_LIMIT.maxRequests - 1, resetTime };
+  }
+  
+  // If user has exceeded limit
+  if (userLimit.count >= RATE_LIMIT.maxRequests) {
+    return { allowed: false, remaining: 0, resetTime: userLimit.resetTime };
+  }
+  
+  // Increment count
+  userLimit.count++;
+  rateLimitStore.set(ip, userLimit);
+  
+  return { 
+    allowed: true, 
+    remaining: RATE_LIMIT.maxRequests - userLimit.count, 
+    resetTime: userLimit.resetTime 
+  };
+}
+
 interface CalendarEvent {
   date: string;
   description: string;
@@ -80,6 +136,30 @@ async function fetchOsuEvents(): Promise<OsuEvent[] | null> {
 
 export async function POST(request: Request) {
   try {
+    // Get client IP and check rate limit
+    const clientIP = getClientIP(request);
+    const rateLimitResult = checkRateLimit(clientIP);
+    
+    // If rate limit exceeded
+    if (!rateLimitResult.allowed) {
+      const resetDate = new Date(rateLimitResult.resetTime);
+      return NextResponse.json(
+        { 
+          error: 'Rate limit exceeded. You can ask maximum 10 questions per day.',
+          resetTime: resetDate.toISOString(),
+          message: `You have reached the daily limit of 10 questions. Please try again after ${resetDate.toLocaleString()}.`
+        },
+        { 
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': RATE_LIMIT.maxRequests.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimitResult.resetTime.toString(),
+          }
+        }
+      );
+    }
+
     const { message } = await request.json();
 
     if (!message) {
@@ -151,6 +231,12 @@ ${osuEvents ? `\n\nHere are the latest OSU events:\n${JSON.stringify(osuEvents.s
 
     return NextResponse.json({
       response: completion.choices[0].message.content
+    }, {
+      headers: {
+        'X-RateLimit-Limit': RATE_LIMIT.maxRequests.toString(),
+        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        'X-RateLimit-Reset': rateLimitResult.resetTime.toString(),
+      }
     });
   } catch (error) {
     console.error('Error in chat completion:', error);

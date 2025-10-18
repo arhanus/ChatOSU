@@ -52,11 +52,19 @@ export default function ChatInterface() {
       setMessages((prev) => [...prev, aiResponse]);
     } catch (error) {
       console.error('Error getting AI response:', error);
-      const errorMessage: Message = {
+      
+      let errorMessage = 'Sorry, I encountered an error while processing your request. Please try again.';
+      
+      // Check if it's a rate limit error
+      if (error instanceof Error && error.message.includes('429')) {
+        errorMessage = 'You have reached the daily limit of 10 questions. Please try again tomorrow.';
+      }
+      
+      const errorResponse: Message = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error while processing your request. Please try again.',
+        content: errorMessage,
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorResponse]);
     } finally {
       setIsLoading(false);
     }
