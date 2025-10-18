@@ -3,3 +3,6 @@ When I first transferred to OSU as an international student, I knew nothing abou
 This AI is specificly configured for the OSU students. It can give you directions, tell you the upcoming events, give you information about the class syllabus or any school related information.
 
 As you can see, I asked "where is the closest gym" and it automatically said recreation center. You can also ask more specific questions like "I want to swim, where is the closest swimming pool?" or "Where is the closest bowling alley?" and you will see that it gives you the correct information.
+
+
+![7A1F5AC1-C103-4757-A5A1-147DE6A04067](https://github.com/user-attachments/assets/35e89238-0889-4603-a40c-951402925069)
